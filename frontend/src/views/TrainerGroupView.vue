@@ -16,7 +16,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useTrainerStore } from '@/stores/trainer'
+import { useTrainerStore } from '../stores/trainer'
 
 const route = useRoute()
 const store = useTrainerStore()

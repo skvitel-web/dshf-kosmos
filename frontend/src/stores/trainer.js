@@ -14,13 +14,15 @@ const mockChildren = [
 
 export const useTrainerStore = defineStore('trainer', {
   state: () => ({
+    // ❗ groups и children НЕ сохраняются в localStorage
     groups: mockGroups,
     children: mockChildren,
+    // ✅ Только attendance — в localStorage
     attendance: JSON.parse(localStorage.getItem('kosmos-attendance') || '{}')
   }),
 
   actions: {
-    saveToStorage() {
+    saveAttendance() {
       localStorage.setItem('kosmos-attendance', JSON.stringify(this.attendance))
     },
 
@@ -28,29 +30,15 @@ export const useTrainerStore = defineStore('trainer', {
       if (!this.attendance[date]) this.attendance[date] = {}
       if (!this.attendance[date][groupId]) this.attendance[date][groupId] = {}
       this.attendance[date][groupId][childId] = { status, excellent }
-      this.saveToStorage()
+      this.saveAttendance()
     },
 
     getAttendance(childId, groupId, date) {
-      const groupData = this.attendance[date]?.[groupId]
-      const childData = groupData?.[childId]
+      const mark = this.attendance[date]?.[groupId]?.[childId]
       return {
-        status: childData?.status ?? null,
-        excellent: Boolean(childData?.excellent)
+        status: mark?.status ?? null,
+        excellent: mark?.excellent === true // только true → true
       }
-    },
-
-    addDraftChild({ name, age, parentContact, groupId }) {
-      const newChild = {
-        id: `draft-${Date.now()}`,
-        name: name.trim(),
-        age: Number(age),
-        parentContact: parentContact.trim(),
-        groupId,
-        isDraft: true
-      }
-      this.children.push(newChild)
-      // Не сохраняем children в localStorage!
     }
   }
 })

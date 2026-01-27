@@ -5,8 +5,8 @@
         <h1 class="headertext">Космос</h1>
       </div>
         <nav class="header__nav">
-            <button class="btn btn--primary">Подать заявку</button>
-            <button class="btn btn--outline">Создать аккаунт</button>
+            <router-link to="/register" class="btn btn--primary">Создать аккаунт</router-link>
+            <router-link to="/login" class="btn btn--outline">Войти в аккаунт</router-link>
         </nav>
     </div>
   </header>
