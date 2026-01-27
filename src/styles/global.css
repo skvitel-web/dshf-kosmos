@@ -1,0 +1,37 @@
+@import './sections.css';
+@import './buttons.css';
+@import './form-elements.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  background-color: var(--color-space-900);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
+
+/* 2. Переменные */
+:root {
+  --color-space-900: #0a0e17;
+  --color-space-800: #121826;
+  --color-space-700: #1e293b;
+  --color-space-600: #334155;
+  --color-space-500: #475569;
+  --color-field-500: #0db773;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+/* 3. Общие утилиты */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}

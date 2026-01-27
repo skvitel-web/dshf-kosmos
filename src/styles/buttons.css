@@ -1,0 +1,67 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Основная кнопка — яркая, акцентная */
+.btn--primary {
+  background: linear-gradient(135deg, #0db773, #00c48a);
+  color: #0a0e17;
+  box-shadow: 0 2px 6px rgba(13, 183, 115, 0.3);
+}
+
+.btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(13, 183, 115, 0.4);
+}
+
+.btn--primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(13, 183, 115, 0.3);
+}
+
+/* Контурная кнопка — светлая, с прозрачным фоном */
+.btn--outline {
+  background-color: transparent;
+  color: var(--color-field-500);
+  border: 2px solid var(--color-field-500);
+  box-shadow: 0 0 0 0 rgba(13, 183, 115, 0);
+}
+
+.btn--outline:hover {
+  background-color: rgba(13, 183, 115, 0.1);
+  box-shadow: 0 0 0 2px rgba(13, 183, 115, 0.2);
+}
+
+.btn--outline:active {
+  background-color: rgba(13, 183, 115, 0.2);
+}
+
+/* Отключённое состояние */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 768px) {
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
