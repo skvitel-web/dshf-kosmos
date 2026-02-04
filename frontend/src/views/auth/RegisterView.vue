@@ -70,15 +70,17 @@ async function register() {
 
   try {
     const response = await fetch('http://localhost:8080/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value,
-        fullName: `${surname.value} ${name.value}${patronymic.value ? ' ' + patronymic.value : ''}`,
-        role: 'PARENT'
-      })
-    })
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' }, // ← обязательно!
+  body: JSON.stringify({
+    email: email.value.trim(),
+    password: password.value,
+    surname: surname.value.trim(), // ← не пустые!
+    name: name.value.trim(),
+    patronymic: patronymic.value?.trim() || null,
+    role: 'PARENT'
+  })
+})
 
     if (response.ok) {
       router.push('/login')

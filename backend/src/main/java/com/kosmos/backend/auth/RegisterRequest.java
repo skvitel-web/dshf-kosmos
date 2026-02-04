@@ -13,7 +13,12 @@ public class RegisterRequest {
     private String password;
     
     @NotBlank
-    private String fullName;
+    private String surname;  // ← отдельно
     
-    private String role = "PARENT"; // по умолчанию
+    @NotBlank
+    private String name;     // ← отдельно
+    
+    private String patronymic; // ← необязательное
+
+    private String role = "PARENT";
 }

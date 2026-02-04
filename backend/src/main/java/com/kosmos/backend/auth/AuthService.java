@@ -1,21 +1,20 @@
 package com.kosmos.backend.auth;
 
-import com.kosmos.backend.model.User;
-import com.kosmos.backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.kosmos.backend.model.User;
+import com.kosmos.backend.repository.UserRepository;
 
 @Service
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
     }
 
     public void register(RegisterRequest request) {
@@ -25,9 +24,12 @@ public class AuthService {
 
         User user = new User();
         user.setEmail(request.getEmail());
-        user.setFullName(request.getFullName());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
+
+        user.setSurname(request.getSurname());
+        user.setName(request.getName());
+        user.setPatronymic(request.getPatronymic());
 
         userRepository.save(user);
     }
@@ -40,6 +42,7 @@ public class AuthService {
             throw new RuntimeException("Неверный email или пароль");
         }
 
-        return jwtUtil.generateToken(user);
+        // JWT пока не реализован — просто возвращаем email
+        return user.getEmail();
     }
 }
