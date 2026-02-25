@@ -1,26 +1,15 @@
 <template>
-  <div class="auth-page">
+  <div class="auth-page role-page">
     <h1 class="section-title">Вход</h1>
     
-    <form @submit.prevent="login" style="max-width: 400px; margin: 0 auto;">
-      <input 
-        v-model="email" 
-        type="email" 
-        placeholder="Email" 
-        required 
-        class="form-input"
-      />
-      <input 
-        v-model="password" 
-        type="password" 
-        placeholder="Пароль" 
-        required 
-        class="form-input"
-      />
+    <form @submit.prevent="login" class="auth-form">
+      <input v-model="email" type="email" placeholder="Email" required class="form-input" />
+      <input v-model="password" type="password" placeholder="Пароль" required class="form-input" />
       <button type="submit" class="btn btn--primary" style="width: 100%;">Войти</button>
     </form>
+    
 
-    <p style="text-align: center; margin-top: 1.5rem;">
+    <p class="auth-footer">
       Нет аккаунта? <router-link to="/register">Зарегистрироваться</router-link>
     </p>
   </div>

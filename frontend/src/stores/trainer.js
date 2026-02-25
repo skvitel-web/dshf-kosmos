@@ -1,44 +1,102 @@
 import { defineStore } from 'pinia'
 
-const mockGroups = [
-  { id: 'group-1', name: 'Младшая группа (6–8 лет)' },
-  { id: 'group-2', name: 'Средняя группа (9–11 лет)' }
-]
-
-const mockChildren = [
-  { id: 'child-1', name: 'Иван Петров', groupId: 'group-1' },
-  { id: 'child-2', name: 'Сергей Иванов', groupId: 'group-1' },
-  { id: 'child-3', name: 'Анна Смирнова', groupId: 'group-1' },
-  { id: 'child-4', name: 'Максим Кузнецов', groupId: 'group-2' }
-]
-
 export const useTrainerStore = defineStore('trainer', {
   state: () => ({
-    // ❗ groups и children НЕ сохраняются в localStorage
-    groups: mockGroups,
-    children: mockChildren,
-    // ✅ Только attendance — в localStorage
-    attendance: JSON.parse(localStorage.getItem('kosmos-attendance') || '{}')
+    // Список детей с расширенными данными
+    children: JSON.parse(localStorage.getItem('cosmos_children')) || [
+      { id: '1', name: 'Артем Иванов', groupId: 'A', qualities: [], metrics: [], campScores: [] },
+      { id: '2', name: 'Михаил Петров', groupId: 'A', qualities: [], metrics: [], campScores: [] }
+    ],
+    // Список качеств (статичный)
+    qualitiesList: [
+      'Лидерские качества', 'Командный игрок', 'Обладает потенциалом',
+      'Дисциплинированный', 'Хорошая техника', 'Ответственный',
+      'Позитивный настрой', 'Креативное мышление', 'Хороший удар'
+    ]
   }),
-
   actions: {
-    saveAttendance() {
-      localStorage.setItem('kosmos-attendance', JSON.stringify(this.attendance))
-    },
 
-    setAttendance({ childId, groupId, date, status, excellent = false }) {
-      if (!this.attendance[date]) this.attendance[date] = {}
-      if (!this.attendance[date][groupId]) this.attendance[date][groupId] = {}
-      this.attendance[date][groupId][childId] = { status, excellent }
-      this.saveAttendance()
-    },
-
-    getAttendance(childId, groupId, date) {
-      const mark = this.attendance[date]?.[groupId]?.[childId]
-      return {
-        status: mark?.status ?? null,
-        excellent: mark?.excellent === true // только true → true
+    // Отметка посещаемости
+    setAttendance(childId, status, isExcellent = false) {
+    const today = new Date().toISOString().split('T')[0];
+    const child = this.children.find(c => c.id === childId);
+    if (child) {
+      if (!child.attendance) child.attendance = {};
+      child.attendance[today] = { status, isExcellent };
+      this.save();
       }
+    },
+    addMetric(childId, metricName, value) {
+    const child = this.children.find(c => c.id === childId);
+    if (child) {
+      if (!child.metrics) child.metrics = [];
+      child.metrics.push({
+        name: metricName,
+        value: value,
+        date: new Date().toISOString()
+      });
+      this.save();
     }
+  },
+
+    // 1. Быстрое добавление ребенка
+    addChildFast(name, info) {
+      this.children.push({
+        id: Date.now().toString(),
+        name,
+        contact: info,
+        groupId: 'A',
+        qualities: [],
+        metrics: [],
+        campScores: []
+      })
+      this.save()
+    },
+    // 2. Добавление качества
+    addQuality(childId, quality) {
+      const child = this.children.find(c => c.id === childId)
+      if (child && !child.qualities.includes(quality)) {
+        child.qualities.push(quality)
+        this.save()
+      }
+    },
+    // 3. Запись норматива
+    addMetric(childId, type, result) {
+      const child = this.children.find(c => c.id === childId)
+      if (child) {
+        child.metrics.push({ type, result, date: new Date().toISOString() })
+        this.save()
+      }
+    },
+    // 4. Оценки на сборах (зарядка, день, вечер)
+    addCampScore(childId, coachId, type, score) {
+      const child = this.children.find(c => c.id === childId)
+      if (child) {
+        child.campScores.push({ date: new Date().toLocaleDateString(), coachId, type, score })
+        this.save()
+      }
+    },
+    save() {
+      localStorage.setItem('cosmos_children', JSON.stringify(this.children))
+    },
+    saveMatch(matchData) {
+      if (!this.matches) this.matches = [];
+     this.matches.push({
+     ...matchData,
+      id: Date.now(),
+      date: new Date().toISOString()
+  });
+  
+  // Начисляем голы игрокам в их общую статистику
+  matchData.events.forEach(event => {
+    const player = this.children.find(c => c.id === event.scorer);
+    if (player) {
+      if (!player.goals) player.goals = 0;
+      player.goals++;
+    }
+    });
+  
+      this.save();
+      }
   }
 })

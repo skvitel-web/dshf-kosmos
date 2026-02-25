@@ -1,50 +1,24 @@
 <template>
-  <div class="auth-page">
+  <div class="auth-page role-page"> 
     <h1 class="section-title">Регистрация (родитель)</h1>
     
-    <form @submit.prevent="register" style="max-width: 400px; margin: 0 auto;">
-      <input 
-        v-model="email" 
-        type="email" 
-        placeholder="Email" 
-        required 
-        class="form-input"
-      />
-      <input 
-        v-model="password" 
-        type="password" 
-        placeholder="Пароль" 
-        required 
-        class="form-input"
-      />
+    <form @submit.prevent="register" class="auth-form">
+      <div class="form-grid">
+        <input v-model="email" type="email" placeholder="Email" required class="form-input" />
+        <input v-model="password" type="password" placeholder="Пароль" required class="form-input" />
+        
+        <input v-model="surname" type="text" placeholder="Фамилия" required class="form-input" />
+        <input v-model="name" type="text" placeholder="Имя" required class="form-input" />
+        
+        <input v-model="patronymic" type="text" placeholder="Отчество (не обязательно)" class="form-input full-width" />
+      </div>
       
-      <input 
-        v-model="surname" 
-        type="text" 
-        placeholder="Фамилия" 
-        required 
-        class="form-input"
-      />
-      <input 
-        v-model="name" 
-        type="text" 
-        placeholder="Имя" 
-        required 
-        class="form-input"
-      />
-      <input 
-        v-model="patronymic" 
-        type="text" 
-        placeholder="Отчество (не обязательно)" 
-        class="form-input"
-      />
-      
-      <button type="submit" class="btn btn--primary" style="width: 100%;">
+      <button type="submit" class="btn btn--primary submit-btn">
         Зарегистрироваться
       </button>
     </form>
 
-    <p style="text-align: center; margin-top: 1.5rem;">
+    <p class="auth-footer">
       Уже есть аккаунт? <router-link to="/login">Войти</router-link>
     </p>
   </div>
