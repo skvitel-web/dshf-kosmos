@@ -33,7 +33,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-function goTo(role) {
+const goTo = (role) => {
   router.push(`/${role}`)
 }
 </script>

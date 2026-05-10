@@ -1,20 +1,13 @@
-<template>
-  <div id="app">
-    <Header />
-    <RouterView />
-    <main>
-      <FeaturesSection />
-      <AboutSection />
-    </main>
-  </div>
-</template>
-
 <script setup>
+import { RouterView } from 'vue-router'
 import Header from './components/Header.vue'
-import FeaturesSection from './components/FeaturesSection.vue'
-import AboutSection from './components/AboutSection.vue'
-import HomeView from './views/HomeView.vue';
 </script>
+
+<template>
+  <Header />
+
+  <RouterView />
+</template>
 
 <style scoped>
 #app {

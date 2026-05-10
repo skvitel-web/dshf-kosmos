@@ -1,126 +1,209 @@
 <template>
-  <div class="container trainer-group-page">
-    <h1 class="section-title">Группа: {{ groupName }}</h1>
+  <div class="trainer-group container">
+    <header class="group-header">
+      <h1 class="section-title">Группа: {{ group?.name || 'Загрузка...' }}</h1>
+    </header>
 
-    <div class="fast-add-card">
-      <h3>+ Новый ученик (быстро)</h3>
+    <div class="auth-form compact-form" style="margin-bottom: 2.5rem;">
+      <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--color-field-500);">+ Быстрое добавление</h3>
       <div class="form-grid">
-        <input v-model="newName" placeholder="Имя Фамилия" class="form-input" />
-        <input v-model="newContact" placeholder="Телефон родителя" class="form-input" />
+        <input v-model="newStudent.lastName" placeholder="Фамилия *" class="form-input" />
+        <input v-model="newStudent.firstName" placeholder="Имя *" class="form-input" />
+        <input v-model="newStudent.contact" placeholder="Телефон" class="form-input" />
       </div>
-      <button @click="quickAdd" class="btn btn--primary" :disabled="!newName">
-        Добавить в список
+      <button 
+        @click="quickAdd" 
+        class="btn btn--primary" 
+        :disabled="!newStudent.lastName || !newStudent.firstName"
+        style="margin-top: 1rem; width: 100%;"
+      >
+        Добавить в базу группы
       </button>
     </div>
 
-    <div class="attendance-list">
-      <div v-for="child in groupChildren" :key="child.id" class="child-card">
-        <div class="child-info">
-          <span class="child-name">{{ child.name }}</span>
-          <span class="child-status-label" v-if="getStatus(child.id)">
-            {{ getStatusText(getStatus(child.id)) }}
-          </span>
-        </div>
-        
-        <div class="attendance-btns">
-          <button 
-            @click="mark(child.id, 'present')" 
-            :class="['att-btn plus', getStatus(child.id) === 'present' ? 'active' : '']"
-          >+</button>
-          <button 
-            @click="mark(child.id, 'absent')" 
-            :class="['att-btn minus', getStatus(child.id) === 'absent' ? 'active' : '']"
-          >−</button>
-          <button 
-            @click="mark(child.id, 'late')" 
-            :class="['att-btn late', getStatus(child.id) === 'late' ? 'active' : '']"
-          >Оп</button>
-          <button 
-            @click="toggleStar(child.id)" 
-            :disabled="getStatus(child.id) === 'absent' || !getStatus(child.id)"
-            :class="['att-btn star', getExcellent(child.id) ? 'active' : '']"
-          >★ 5</button>
+    <div class="timeline-container" v-if="groupTrainingDays.length">
+      <div class="timeline-scroll">
+        <div 
+          v-for="day in groupTrainingDays" 
+          :key="day.date" 
+          class="timeline-day"
+          :class="{ 'is-active': day.date === selectedDate }"
+          @click="selectedDate = day.date"
+        >
+          <span class="day-name">{{ day.weekday }}</span>
+          <span class="day-number">{{ day.dayNumber }}</span>
+          <div class="day-dot"></div>
         </div>
       </div>
     </div>
 
-    <router-link to="/trainer" class="btn btn--outline" style="margin-top: 2rem;">
-      ← К списку групп
-    </router-link>
+    <div class="attendance-section" v-if="selectedDate">
+      <h3 class="date-display">{{ formatFullDate(selectedDate) }}</h3>
+      
+      <div class="attendance-list">
+        <div 
+          v-for="child in children" 
+          :key="child.id" 
+          class="modern-card attendance-card"
+          :class="{ 
+            'is-present': getStatus(child.id) === 'present',
+            'has-excellent': hasExcellent(child.id)
+          }"
+        >
+          <div class="card-accent"></div>
+          
+          <div class="card-content" @click="toggleMark(child.id)">
+            <div class="student-info">
+              <span class="student-name">{{ child.lastName }} {{ child.firstName }}</span>
+              <span class="status-label">
+                {{ getStatus(child.id) === 'present' ? '✅ Присутствует' : '❌ Отсутствует' }}
+              </span>
+            </div>
+          </div>
+          
+          <button 
+            class="excellent-btn" 
+            @click.stop="toggleStar(child.id)"
+            :disabled="getStatus(child.id) !== 'present'"
+            title="Отметить за отличную работу"
+          >
+            ★
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="groupTrainingDays.length === 0" class="no-data">
+      <p>В расписании пока нет тренировок для этой группы.</p>
+      <router-link to="/trainer/schedule" class="btn btn--outline btn--sm" style="margin-top: 1rem;">
+        Перейти в расписание
+      </router-link>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useTrainerStore } from '@/stores/trainer'
 
+const route = useRoute()
 const store = useTrainerStore()
-const today = new Date().toISOString().split('T')[0]
+const groupId = route.params.id
 
-const groupName = ref('Старшая группа') // В реальности берется из параметров
-const newName = ref('')
-const newContact = ref('')
+// Состояние формы нового ученика
+const newStudent = ref({
+  lastName: '',
+  firstName: '',
+  contact: ''
+})
 
-const groupChildren = computed(() => store.children)
+// Базовые данные
+const group = computed(() => store.groups.find(g => g.id === groupId))
+const children = computed(() => store.children.filter(c => c.groupId === groupId))
 
-function mark(id, status) {
-  const current = store.attendance?.[`${today}_${id}`] || {}
-  store.setAttendance(id, today, status, current.excellent || false)
+// 1. ЛОГИКА КАЛЕНДАРЯ: Фильтруем расписание только для этой группы
+const groupTrainingDays = computed(() => {
+  const dates = store.schedule
+    .filter(item => item.groupId === groupId)
+    .map(item => item.date)
+  
+  const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(a) - new Date(b))
+
+  return uniqueDates.map(dateStr => {
+    const d = new Date(dateStr)
+    return {
+      date: dateStr,
+      dayNumber: d.getDate(),
+      weekday: d.toLocaleDateString('ru-RU', { weekday: 'short' }).toUpperCase()
+    }
+  })
+})
+
+const selectedDate = ref('')
+
+// Инициализация: выбираем ближайшую тренировку
+onMounted(() => {
+  const today = new Date().toISOString().split('T')[0]
+  if (groupTrainingDays.value.some(d => d.date === today)) {
+    selectedDate.value = today
+  } else if (groupTrainingDays.value.length > 0) {
+    // Выбираем либо последнюю прошедшую, либо первую будущую
+    selectedDate.value = groupTrainingDays.value[0].date
+  }
+})
+
+// 2. РАБОТА С ПОСЕЩАЕМОСТЬЮ
+function getStatus(childId) {
+  const att = store.getAttendance(childId, groupId, selectedDate.value)
+  return att?.status || 'absent'
 }
 
-function toggleStar(id) {
-  const current = store.attendance?.[`${today}_${id}`] || { status: 'present' }
-  store.setAttendance(id, today, current.status, !current.excellent)
+function hasExcellent(childId) {
+  const att = store.getAttendance(childId, groupId, selectedDate.value)
+  return att?.excellent === true
 }
 
-function getStatus(id) { return store.attendance?.[`${today}_${id}`]?.status }
-function getExcellent(id) { return store.attendance?.[`${today}_${id}`]?.excellent }
-
-function getStatusText(s) {
-  const map = { present: 'Был', absent: 'Н/Б', late: 'Опоздал' }
-  return map[s] || ''
+function toggleMark(childId) {
+  const currentStatus = getStatus(childId)
+  const newStatus = currentStatus === 'present' ? 'absent' : 'present'
+  
+  // При смене на "отсутствует" звезда всегда снимается автоматически
+  const currentAtt = store.getAttendance(childId, groupId, selectedDate.value)
+  store.setAttendance({
+    childId,
+    date: selectedDate.value,
+    status: newStatus,
+    excellent: newStatus === 'absent' ? false : (currentAtt?.excellent || false)
+  })
 }
 
+function toggleStar(childId) {
+  const currentAtt = store.getAttendance(childId, groupId, selectedDate.value)
+  if (currentAtt?.status !== 'present') return
+
+  store.setAttendance({
+    childId,
+    date: selectedDate.value,
+    status: 'present',
+    excellent: !currentAtt.excellent
+  })
+}
+
+function formatFullDate(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' })
+}
+
+// 3. ДОБАВЛЕНИЕ УЧЕНИКА
 function quickAdd() {
-  if (newName.value) {
-    store.addChildFast(newName.value, newContact.value)
-    newName.value = ''; newContact.value = ''
+  if (newStudent.value.lastName && newStudent.value.firstName) {
+    const newEntry = {
+      id: Date.now().toString(),
+      lastName: newStudent.value.lastName,
+      firstName: newStudent.value.firstName,
+      groupId: groupId,
+      contact: newStudent.value.contact,
+      qualities: [],
+      metrics: [],
+      campScores: [],
+      attendance: {}
+    }
+    
+    store.children.push(newEntry)
+    store.save() // Сохраняем в localStorage
+    
+    // Очистка полей
+    newStudent.value = { lastName: '', firstName: '', contact: '' }
   }
 }
 </script>
 
 <style scoped>
-.fast-add-card {
-  background: var(--color-space-800);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px dashed var(--color-field-500);
-  margin-bottom: 2rem;
-}
-.child-card {
+/* Локальные правки, если нужно, но основные стили должны быть в sections.css */
+.attendance-list {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--color-space-800);
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--color-space-700);
+  flex-direction: column;
+  gap: 10px;
 }
-.attendance-btns { display: flex; gap: 8px; }
-.att-btn {
-  width: 44px; height: 44px;
-  border-radius: 6px;
-  border: 1px solid var(--color-space-600);
-  background: var(--color-space-700);
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-}
-.att-btn.plus.active { background: #059669; border-color: #10b981; }
-.att-btn.minus.active { background: #dc2626; border-color: #ef4444; }
-.att-btn.late.active { background: #d97706; border-color: #f59e0b; }
-.att-btn.star.active { background: #ca8a04; color: white; }
-.att-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 </style>

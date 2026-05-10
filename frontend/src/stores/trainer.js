@@ -2,30 +2,72 @@ import { defineStore } from 'pinia'
 
 export const useTrainerStore = defineStore('trainer', {
   state: () => ({
-    // Список детей с расширенными данными
-    children: JSON.parse(localStorage.getItem('cosmos_children')) || [
-      { id: '1', name: 'Артем Иванов', groupId: 'A', qualities: [], metrics: [], campScores: [] },
-      { id: '2', name: 'Михаил Петров', groupId: 'A', qualities: [], metrics: [], campScores: [] }
+    groups: [
+      { id: 'A', name: 'Младшая группа (A)' },
+      { id: 'B', name: 'Старшая группа (B)' }
     ],
-    // Список качеств (статичный)
-    qualitiesList: [
-      'Лидерские качества', 'Командный игрок', 'Обладает потенциалом',
-      'Дисциплинированный', 'Хорошая техника', 'Ответственный',
-      'Позитивный настрой', 'Креативное мышление', 'Хороший удар'
-    ]
+    children: JSON.parse(localStorage.getItem('cosmos_children')) || [
+      { 
+        id: '1', 
+        lastName: 'Иванов', 
+        firstName: 'Артем', 
+        middleName: '', 
+        groupId: 'A', 
+        contact: '89001234567',
+        qualities: [], 
+        metrics: [], 
+        campScores: [],
+        attendance: {} 
+      }
+    ],  
+  schedule: JSON.parse(localStorage.getItem('cosmos_schedule')) || [],
   }),
-  actions: {
+  
+  getters: {
+    getAttendance: (state) => (childId, groupId, date) => {
+      const child = state.children.find(c => c.id === childId)
+      return child?.attendance?.[date] || null
+    }
+  },
 
-    // Отметка посещаемости
-    setAttendance(childId, status, isExcellent = false) {
-    const today = new Date().toISOString().split('T')[0];
-    const child = this.children.find(c => c.id === childId);
-    if (child) {
-      if (!child.attendance) child.attendance = {};
-      child.attendance[today] = { status, isExcellent };
-      this.save();
+  actions: {
+    addScheduleEntry(entry) {
+      this.schedule.push({
+        id: Date.now().toString(),
+        ...entry
+      });
+      this.saveSchedule();
+    },
+
+    updateChildPayment(childId, paymentData) {
+      const child = this.children.find(c => c.id === childId)
+        if (child) {
+          child.lessonsLeft = paymentData.lessonsLeft
+          child.paymentValidUntil = paymentData.paymentValidUntil
+            this.save() // Сохраняем в localStorage
       }
     },
+    saveSchedule() {
+      localStorage.setItem('cosmos_schedule', JSON.stringify(this.schedule));
+    },
+    setAttendance(payload) {
+  const { childId, date, status, excellent } = payload;
+  const child = this.children.find(c => c.id === childId);
+
+  if (child) {
+    if (!child.attendance) child.attendance = {};
+
+    // ЛОГИКА: если ставим "отсутствует", отличная оценка всегда сбрасывается в false
+    const finalExcellent = status === 'absent' ? false : excellent;
+
+    child.attendance[date] = { 
+      status: status, 
+      excellent: finalExcellent 
+    };
+
+    this.save();
+  }
+},
     addMetric(childId, metricName, value) {
     const child = this.children.find(c => c.id === childId);
     if (child) {
@@ -40,18 +82,26 @@ export const useTrainerStore = defineStore('trainer', {
   },
 
     // 1. Быстрое добавление ребенка
-    addChildFast(name, info) {
+    addChildFast({ lastName, firstName, middleName, contact, groupId }) {
       this.children.push({
         id: Date.now().toString(),
-        name,
-        contact: info,
-        groupId: 'A',
+        lastName,
+        firstName,
+        middleName,
+        contact,
+        groupId,
         qualities: [],
         metrics: [],
-        campScores: []
+        campScores: [],
+        attendance: {}
       })
       this.save()
     },
+
+    save() {
+      localStorage.setItem('cosmos_children', JSON.stringify(this.children))
+    },
+    
     // 2. Добавление качества
     addQuality(childId, quality) {
       const child = this.children.find(c => c.id === childId)
