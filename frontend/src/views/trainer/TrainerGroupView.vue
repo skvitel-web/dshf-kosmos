@@ -5,6 +5,21 @@
     </header>
 
     <div class="auth-form compact-form" style="margin-bottom: 2.5rem;">
+      <h3 style="margin-bottom: 0.5rem; font-size: 1rem;">Объявление для группы</h3>
+      <div style="display: flex; gap: 0.5rem;">
+        <input 
+          v-model="announcementText" 
+          placeholder="Текст сообщения..." 
+          class="form-input" 
+          style="margin-bottom: 0;"
+        />
+        <button @click="publishAnnouncement" class="btn btn--primary">
+          Отправить
+        </button>
+      </div>
+    </div>
+
+    <div class="auth-form compact-form" style="margin-bottom: 2.5rem;">
       <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--color-field-500);">+ Быстрое добавление</h3>
       <div class="form-grid">
         <input v-model="newStudent.lastName" placeholder="Фамилия *" class="form-input" />
@@ -54,9 +69,14 @@
           
           <div class="card-content" @click="toggleMark(child.id)">
             <div class="student-info">
-              <span class="student-name">{{ child.lastName }} {{ child.firstName }}</span>
+              <span class="student-name">
+                {{ child.lastName }} {{ child.firstName }} 
+                <small style="margin-left: 10px; font-weight: normal; opacity: 0.6;">
+                  ({{ getPreStatusText(child.preStatus || 'none') }})
+                </small>
+              </span>
               <span class="status-label">
-                {{ getStatus(child.id) === 'present' ? '✅ Присутствует' : '❌ Отсутствует' }}
+                {{ getStatus(child.id) === 'present' ? 'Присутствует' : 'Отсутствует' }}
               </span>
             </div>
           </div>
@@ -65,7 +85,6 @@
             class="excellent-btn" 
             @click.stop="toggleStar(child.id)"
             :disabled="getStatus(child.id) !== 'present'"
-            title="Отметить за отличную работу"
           >
             ★
           </button>
@@ -91,18 +110,17 @@ const route = useRoute()
 const store = useTrainerStore()
 const groupId = route.params.id
 
-// Состояние формы нового ученика
+const announcementText = ref('')
+
 const newStudent = ref({
   lastName: '',
   firstName: '',
   contact: ''
 })
 
-// Базовые данные
 const group = computed(() => store.groups.find(g => g.id === groupId))
 const children = computed(() => store.children.filter(c => c.groupId === groupId))
 
-// 1. ЛОГИКА КАЛЕНДАРЯ: Фильтруем расписание только для этой группы
 const groupTrainingDays = computed(() => {
   const dates = store.schedule
     .filter(item => item.groupId === groupId)
@@ -122,18 +140,15 @@ const groupTrainingDays = computed(() => {
 
 const selectedDate = ref('')
 
-// Инициализация: выбираем ближайшую тренировку
 onMounted(() => {
   const today = new Date().toISOString().split('T')[0]
   if (groupTrainingDays.value.some(d => d.date === today)) {
     selectedDate.value = today
   } else if (groupTrainingDays.value.length > 0) {
-    // Выбираем либо последнюю прошедшую, либо первую будущую
     selectedDate.value = groupTrainingDays.value[0].date
   }
 })
 
-// 2. РАБОТА С ПОСЕЩАЕМОСТЬЮ
 function getStatus(childId) {
   const att = store.getAttendance(childId, groupId, selectedDate.value)
   return att?.status || 'absent'
@@ -148,7 +163,6 @@ function toggleMark(childId) {
   const currentStatus = getStatus(childId)
   const newStatus = currentStatus === 'present' ? 'absent' : 'present'
   
-  // При смене на "отсутствует" звезда всегда снимается автоматически
   const currentAtt = store.getAttendance(childId, groupId, selectedDate.value)
   store.setAttendance({
     childId,
@@ -175,7 +189,18 @@ function formatFullDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' })
 }
 
-// 3. ДОБАВЛЕНИЕ УЧЕНИКА
+function publishAnnouncement() {
+  if (!announcementText.value.trim()) return
+  alert(`Сохранено: ${announcementText.value}`)
+  announcementText.value = ''
+}
+
+function getPreStatusText(status) {
+  if (status === 'will_attend') return 'Будет'
+  if (status === 'absent') return 'Не будет'
+  return 'Нет ответа'
+}
+
 function quickAdd() {
   if (newStudent.value.lastName && newStudent.value.firstName) {
     const newEntry = {
@@ -187,20 +212,21 @@ function quickAdd() {
       qualities: [],
       metrics: [],
       campScores: [],
-      attendance: {}
+      attendance: {},
+      preStatus: 'none'
     }
     
     store.children.push(newEntry)
-    store.save() // Сохраняем в localStorage
+    if (typeof store.save === 'function') {
+      store.save()
+    }
     
-    // Очистка полей
     newStudent.value = { lastName: '', firstName: '', contact: '' }
   }
 }
 </script>
 
 <style scoped>
-/* Локальные правки, если нужно, но основные стили должны быть в sections.css */
 .attendance-list {
   display: flex;
   flex-direction: column;

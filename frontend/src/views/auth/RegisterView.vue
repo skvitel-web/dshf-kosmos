@@ -13,6 +13,12 @@
         <input v-model="patronymic" type="text" placeholder="Отчество (не обязательно)" class="form-input full-width" />
       </div>
       
+      <p class="auth-footer" style="margin-top: 0; margin-bottom: 1.5rem; font-size: 0.85rem; text-align: left; line-height: 1.4;">
+        Нажимая кнопку «Зарегистрироваться», вы даете согласие на 
+        <a href="#" @click.prevent="" style="text-decoration: underline;">обработку персональных данных</a> 
+        (ФИО, контактные данные и дата рождения) для обеспечения учебного и тренировочного процесса.
+      </p>
+
       <button type="submit" class="btn btn--primary submit-btn">
         Зарегистрироваться
       </button>
@@ -45,11 +51,11 @@ async function register() {
   try {
     const response = await fetch('http://localhost:8080/api/auth/register', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' }, // ← обязательно!
+  headers: { 'Content-Type': 'application/json' }, 
   body: JSON.stringify({
     email: email.value.trim(),
     password: password.value,
-    surname: surname.value.trim(), // ← не пустые!
+    surname: surname.value.trim(), 
     name: name.value.trim(),
     patronymic: patronymic.value?.trim() || null,
     role: 'PARENT'

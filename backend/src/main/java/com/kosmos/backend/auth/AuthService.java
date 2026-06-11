@@ -1,5 +1,8 @@
 package com.kosmos.backend.auth;
 
+import java.util.Collections;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +14,13 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil; // ← Добавляем утиль
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    // Внедряем через конструктор
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     public void register(RegisterRequest request) {
@@ -26,7 +32,6 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(User.Role.valueOf(request.getRole().toUpperCase()));
-
         user.setSurname(request.getSurname());
         user.setName(request.getName());
         user.setPatronymic(request.getPatronymic());
@@ -34,6 +39,7 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    // Изменяем возвращаемый тип с String (email) на String (JWT Токен)
     public String login(LoginRequest request) {
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Неверный email или пароль"));
@@ -42,7 +48,15 @@ public class AuthService {
             throw new RuntimeException("Неверный email или пароль");
         }
 
-        // JWT пока не реализован — просто возвращаем email
-        return user.getEmail();
+        // Создаем объект UserDetails, который требует твой JwtUtil
+        org.springframework.security.core.userdetails.User userDetails = 
+                new org.springframework.security.core.userdetails.User(
+                        user.getEmail(),
+                        user.getPasswordHash(),
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                );
+
+        // Возвращаем сгенерированный JWT-токен
+        return jwtUtil.generateToken(userDetails);
     }
 }
