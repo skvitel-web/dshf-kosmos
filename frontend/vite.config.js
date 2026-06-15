@@ -6,7 +6,15 @@ export default defineConfig({
   base: './',
   resolve: {
     alias: {
-      '@': '/src' // Vite использует относительный путь от корня проекта (frontend/)
+      '@': '/src'
     }
-  }
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
 })

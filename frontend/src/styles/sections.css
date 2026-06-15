@@ -203,7 +203,10 @@
   padding: 2rem;
   border-radius: 1rem;
   border: 1px solid var(--color-space-700);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Глубокая тень */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .form-grid {
@@ -234,10 +237,14 @@
 
 .submit-btn {
   width: 100%;
-  height: 3rem;
+  min-height: 3rem;
   font-size: 1.1rem;
   text-transform: uppercase;
   letter-spacing: 1px;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 0.75rem 1.25rem;
+  white-space: normal;
 }
 
 .auth-footer {

@@ -1,75 +1,95 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const routes = [
-  // 1. ГЛАВНАЯ СТРАНИЦА (Лендинг)
   {
     path: '/',
     name: 'Home',
-    component: () => import('@/views/HomeView.vue')
+    component: () => import('@/views/HomeView.vue'),
   },
-
-  // 2. БЛОК ТРЕНЕРА (Плоская структура для простоты)
-  // Мы не используем children здесь, чтобы избежать путаницы с <router-view> внутри дашборда
   {
     path: '/trainer',
     name: 'TrainerDashboard',
-    component: () => import('@/views/trainer/TrainerDashboard.vue')
+    component: () => import('@/views/trainer/TrainerDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['TRAINER'] },
   },
   {
     path: '/trainer/groups',
     name: 'TrainerGroups',
-    // Если у вас нет отдельного списка групп, временно ведем на общую вьюху
-    component: () => import('@/views/trainer/TrainerGroupView.vue')
+    component: () => import('@/views/trainer/TrainerGroupView.vue'),
+    meta: { requiresAuth: true, roles: ['TRAINER'] },
   },
   {
     path: '/trainer/group/:id',
     name: 'TrainerGroup',
-    component: () => import('@/views/trainer/TrainerGroupView.vue')
+    component: () => import('@/views/trainer/TrainerGroupView.vue'),
+    meta: { requiresAuth: true, roles: ['TRAINER'] },
   },
   {
     path: '/trainer/schedule',
     name: 'Schedule',
-    component: () => import('@/views/trainer/ScheduleView.vue')
+    component: () => import('@/views/trainer/ScheduleView.vue'),
+    meta: { requiresAuth: true, roles: ['TRAINER'] },
   },
   {
     path: '/trainer/referee',
     name: 'Referee',
-    component: () => import('@/views/trainer/RefereeView.vue')
+    component: () => import('@/views/trainer/RefereeView.vue'),
+    meta: { requiresAuth: true, roles: ['TRAINER'] },
   },
-
-  // 3. ОСТАЛЬНЫЕ РОЛИ
   {
     path: '/admin',
     name: 'Admin',
-    component: () => import('@/views/admin/AdminView.vue')
+    component: () => import('@/views/admin/AdminView.vue'),
+    meta: { requiresAuth: true, roles: ['ADMIN'] },
   },
   {
     path: '/parent',
     name: 'Parent',
-    component: () => import('@/views/parent/ParentView.vue')
+    component: () => import('@/views/parent/ParentView.vue'),
+    meta: { requiresAuth: true, roles: ['PARENT'] },
   },
   {
     path: '/child',
     name: 'Child',
-    component: () => import('@/views/child/ChildView.vue')
+    component: () => import('@/views/child/ChildView.vue'),
+    meta: { requiresAuth: true, roles: ['PARENT'] },
   },
-
-  // 4. АВТОРИЗАЦИЯ
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/auth/LoginView.vue')
+    component: () => import('@/views/auth/LoginView.vue'),
+    meta: { guestOnly: true },
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/auth/RegisterView.vue')
-  }
+    component: () => import('@/views/auth/RegisterView.vue'),
+    meta: { guestOnly: true },
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
+})
+
+router.beforeEach((to) => {
+  const authStore = useAuthStore()
+
+  if (to.meta.guestOnly && authStore.isAuthenticated) {
+    return authStore.dashboardRoute
+  }
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return { name: 'Login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.roles?.length && !to.meta.roles.includes(authStore.role)) {
+    return authStore.isAuthenticated ? authStore.dashboardRoute : { name: 'Login' }
+  }
+
+  return true
 })
 
 export default router

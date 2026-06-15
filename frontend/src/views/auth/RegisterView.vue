@@ -1,26 +1,33 @@
 <template>
-  <div class="auth-page role-page"> 
+  <div class="auth-page role-page">
     <h1 class="section-title">Регистрация (родитель)</h1>
-    
+
     <form @submit.prevent="register" class="auth-form">
       <div class="form-grid">
         <input v-model="email" type="email" placeholder="Email" required class="form-input" />
         <input v-model="password" type="password" placeholder="Пароль" required class="form-input" />
-        
+
         <input v-model="surname" type="text" placeholder="Фамилия" required class="form-input" />
         <input v-model="name" type="text" placeholder="Имя" required class="form-input" />
-        
-        <input v-model="patronymic" type="text" placeholder="Отчество (не обязательно)" class="form-input full-width" />
+
+        <input
+          v-model="patronymic"
+          type="text"
+          placeholder="Отчество (не обязательно)"
+          class="form-input full-width"
+        />
       </div>
-      
-      <p class="auth-footer" style="margin-top: 0; margin-bottom: 1.5rem; font-size: 0.85rem; text-align: left; line-height: 1.4;">
-        Нажимая кнопку «Зарегистрироваться», вы даете согласие на 
-        <a href="#" @click.prevent="" style="text-decoration: underline;">обработку персональных данных</a> 
+
+      <p class="auth-footer auth-consent">
+        Нажимая кнопку «Зарегистрироваться», вы даете согласие на
+        <a href="#" @click.prevent="">обработку персональных данных</a>
         (ФИО, контактные данные и дата рождения) для обеспечения учебного и тренировочного процесса.
       </p>
 
-      <button type="submit" class="btn btn--primary submit-btn">
-        Зарегистрироваться
+      <p v-if="errorMessage" class="auth-error">{{ errorMessage }}</p>
+
+      <button type="submit" class="btn btn--primary submit-btn" :disabled="isLoading">
+        {{ isLoading ? 'Регистрация...' : 'Зарегистрироваться' }}
       </button>
     </form>
 
@@ -33,44 +40,64 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const email = ref('')
 const password = ref('')
 const surname = ref('')
 const name = ref('')
-const patronymic = ref('') // необязательное
+const patronymic = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
+
 const router = useRouter()
+const authStore = useAuthStore()
 
 async function register() {
-  // Валидация на фронтенде
   if (!email.value || !password.value || !surname.value || !name.value) {
-    alert('Пожалуйста, заполните все обязательные поля.')
+    errorMessage.value = 'Пожалуйста, заполните все обязательные поля.'
     return
   }
 
-  try {
-    const response = await fetch('http://localhost:8080/api/auth/register', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' }, 
-  body: JSON.stringify({
-    email: email.value.trim(),
-    password: password.value,
-    surname: surname.value.trim(), 
-    name: name.value.trim(),
-    patronymic: patronymic.value?.trim() || null,
-    role: 'PARENT'
-  })
-})
+  errorMessage.value = ''
+  isLoading.value = true
 
-    if (response.ok) {
-      router.push('/login')
-    } else {
-      const error = await response.text()
-      alert('Ошибка регистрации: ' + error)
-    }
+  try {
+    await authStore.register({
+      email: email.value.trim(),
+      password: password.value,
+      surname: surname.value.trim(),
+      name: name.value.trim(),
+      patronymic: patronymic.value?.trim() || null,
+      role: 'PARENT',
+    })
+    router.push('/login')
   } catch (error) {
-    console.error(error)
-    alert('Сервер недоступен. Проверьте, запущен ли бэкенд.')
+    errorMessage.value =
+      error.response?.data || 'Ошибка регистрации. Попробуйте другой email.'
+  } finally {
+    isLoading.value = false
   }
 }
 </script>
+
+<style scoped>
+.auth-consent {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.auth-consent a {
+  text-decoration: underline;
+}
+
+.auth-error {
+  color: #ef4444;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+</style>
