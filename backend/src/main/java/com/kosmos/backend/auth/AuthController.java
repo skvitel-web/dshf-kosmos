@@ -1,6 +1,5 @@
 package com.kosmos.backend.auth;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,14 +12,18 @@ import com.kosmos.backend.repository.UserRepository;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*") // На время диплома разрешаем доступ отовсюду
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    // Делаем поля final — это гарантирует, что они инициализируются один раз при старте
+    private final AuthService authService;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository; // Добавляем репозиторий, чтобы достать роль
+    // Создаем конструктор вместо @Autowired над полями. Spring Boot сам подставит сюда бины!
+    public AuthController(AuthService authService, UserRepository userRepository) {
+        this.authService = authService;
+        this.userRepository = userRepository;
+    }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
@@ -35,20 +38,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            // Теперь здесь получаем токен
             String token = authService.login(request);
-            
-            // Находим пользователя в БД, чтобы узнать его роль
             User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
-            
-            // Отправляем на фронтенд полный набор данных
             return ResponseEntity.ok(new LoginResponse(token, user.getRole().name(), user.getEmail()));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
     }
 
-    // Обновленный класс ответа под нужды фронтенда
     public static class LoginResponse {
         private final String token;
         private final String role;
